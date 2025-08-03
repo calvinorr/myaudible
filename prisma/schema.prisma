@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Author {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  bio         String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  books       Book[]
+  
+  @@map("authors")
+}
+
+model Genre {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  books       Book[]
+  
+  @@map("genres")
+}
+
+model Book {
+  id              Int       @id @default(autoincrement())
+  title           String
+  subtitle        String?
+  description     String?
+  coverUrl        String?
+  duration        Int       // in minutes
+  releaseDate     DateTime?
+  isbn            String?
+  asin            String?   // Amazon Standard Identification Number
+  language        String?   @default("en")
+  publisher       String?
+  series          String?
+  seriesOrder     Int?
+  
+  // Personal tracking
+  personalRating  Float?    // 1-5 scale
+  progress        Int       @default(0) // percentage 0-100
+  isCompleted     Boolean   @default(false)
+  isFavorite      Boolean   @default(false)
+  personalNotes   String?
+  tags            String?   // JSON array of custom tags
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  addedAt         DateTime  @default(now())
+  lastPlayedAt    DateTime?
+  completedAt     DateTime?
+  
+  // Foreign keys
+  authorId        Int
+  genreId         Int?
+  narratorId      Int?
+  
+  // Relationships
+  author          Author    @relation(fields: [authorId], references: [id])
+  genre           Genre?    @relation(fields: [genreId], references: [id])
+  narrator        Narrator? @relation(fields: [narratorId], references: [id])
+  
+  // Indexes for performance optimization
+  @@index([title])                    // Search by title
+  @@index([authorId])                 // Filter by author
+  @@index([genreId])                  // Filter by genre  
+  @@index([narratorId])               // Filter by narrator
+  @@index([series])                   // Filter by series
+  @@index([isCompleted])              // Filter by completion status
+  @@index([progress])                 // Filter by reading progress
+  @@index([personalRating])           // Filter by rating
+  @@index([addedAt])                  // Sort by date added
+  @@index([completedAt])              // Sort by completion date
+  @@index([releaseDate])              // Filter by release year
+  @@index([duration])                 // Filter by book length
+  @@index([isFavorite])               // Filter favorites
+  @@index([isCompleted, completedAt]) // Compound index for analytics
+  @@index([authorId, isCompleted])    // Author completion analysis
+  @@index([genreId, isCompleted])     // Genre completion analysis
+  @@index([series, seriesOrder])      // Series ordering
+  
+  @@map("books")
+}
+
+model Narrator {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  bio         String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  books       Book[]
+  
+  @@map("narrators")
+}
