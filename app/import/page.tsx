@@ -273,9 +273,9 @@ export default function ImportPage() {
         <div className="space-y-2 text-blue-800 dark:text-blue-200">
           <p>• <strong>From Audible:</strong> Use the Audible Library Extractor browser extension to export your library as CSV</p>
           <p>• <strong>From other apps:</strong> Export your audiobook data in CSV or JSON format</p>
-          <p>• Upload the file and we'll import your entire library automatically</p>
+          <p>• Upload the file and we&apos;ll import your entire library automatically</p>
           <p>• Duplicate books (same title + author) will be automatically skipped</p>
-          <p>• Supports Audible-specific fields like ASIN, length format "5h 30m", and purchase dates</p>
+          <p>• Supports Audible-specific fields like ASIN, length format &ldquo;5h 30m&rdquo;, and purchase dates</p>
         </div>
       </div>
 
@@ -303,7 +303,7 @@ export default function ImportPage() {
             <span className="bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-100 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
             <div>
               <p className="font-medium">Go to Your Audible Library</p>
-              <p className="text-sm">Visit audible.com/lib and click the "Audible Library Extractor" button</p>
+              <p className="text-sm">Visit audible.com/lib and click the &ldquo;Audible Library Extractor&rdquo; button</p>
             </div>
           </div>
           
