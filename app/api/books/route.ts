@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -23,9 +26,9 @@ export async function GET(request: NextRequest) {
     // Search filter
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { author: { name: { contains: search, mode: 'insensitive' } } },
-        { narrator: { name: { contains: search, mode: 'insensitive' } } },
+        { title: { contains: search } },
+        { author: { name: { contains: search } } },
+        { narrator: { name: { contains: search } } },
       ]
     }
 
@@ -60,17 +63,17 @@ export async function GET(request: NextRequest) {
 
     // Series filter
     if (series) {
-      where.series = { contains: series, mode: 'insensitive' }
+      where.series = { contains: series }
     }
 
     // Narrator filter
     if (narrator) {
-      where.narrator = { name: { contains: narrator, mode: 'insensitive' } }
+      where.narrator = { name: { contains: narrator } }
     }
 
     // Genre filter
     if (genre) {
-      where.genre = { name: { contains: genre, mode: 'insensitive' } }
+      where.genre = { name: { contains: genre } }
     }
 
     // Build orderBy clause

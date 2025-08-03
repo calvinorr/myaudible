@@ -15,12 +15,17 @@ model Author {
   name        String   @unique
   bio         String?
   imageUrl    String?
+  websiteUrl  String?  // For scraping new releases
+  socialUrls  String?  // JSON array of social media URLs
+  rssUrl      String?  // RSS feed URL for blog/announcements
+  lastScrapedAt DateTime? // When we last checked for new releases
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   // Relationships
   books           Book[]
   favoriteAuthors FavoriteAuthor[]
+  authorReleases  AuthorRelease[]
   
   @@map("authors")
 }
@@ -77,6 +82,7 @@ model Book {
   author          Author    @relation(fields: [authorId], references: [id])
   genre           Genre?    @relation(fields: [genreId], references: [id])
   narrator        Narrator? @relation(fields: [narratorId], references: [id])
+  recommendations BookRecommendation[]
   
   // Indexes for performance optimization
   @@index([title])                    // Search by title
@@ -126,3 +132,132 @@ model FavoriteAuthor {
   @@unique([authorId])
   @@map("favorite_authors")
 }
+
+// AI-Powered Discovery Models
+
+model BookRecommendation {
+  id            Int      @id @default(autoincrement())
+  bookId        Int?     // Null for external books not in library
+  externalId    String?  // Google Books ID, OpenLibrary ID, etc.
+  title         String
+  author        String
+  description   String?
+  coverUrl      String?
+  isbn          String?
+  publishedDate DateTime?
+  pageCount     Int?
+  averageRating Float?
+  categories    String?  // JSON array
+  
+  // Recommendation metadata
+  recommendationType String // "similar_authors", "mood_based", "complete_series", "reading_pattern", etc.
+  confidence         Float  @default(0.0) // 0.0 to 1.0 confidence score
+  reasoning          String? // AI-generated explanation for recommendation
+  sourceBooks        String? // JSON array of book IDs that led to this recommendation
+  moodTags          String? // JSON array of mood/context tags
+  
+  // User interaction
+  isViewed      Boolean  @default(false)
+  isLiked       Boolean?
+  isDismissed   Boolean  @default(false)
+  clickedAt     DateTime?
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expiresAt     DateTime? // For time-sensitive recommendations
+  
+  // Relationships
+  book          Book?    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  
+  @@index([recommendationType])
+  @@index([confidence])
+  @@index([createdAt])
+  @@index([isViewed, isDismissed])
+  @@index([expiresAt])
+  @@unique([externalId, recommendationType], name: "externalId_recommendationType")
+  @@map("book_recommendations")
+}
+
+model AuthorRelease {
+  id              Int      @id @default(autoincrement())
+  authorId        Int
+  externalId      String?  // Google Books ID, etc.
+  title           String
+  description     String?
+  coverUrl        String?
+  isbn            String?
+  expectedDate    DateTime?
+  announcedDate   DateTime?
+  publishedDate   DateTime?
+  preorderUrl     String?
+  
+  // Release tracking
+  releaseStatus   String   @default("announced") // "announced", "preorder", "published", "delayed"
+  sourceUrl       String?  // Where we found the announcement
+  lastScrapedAt   DateTime @default(now())
+  
+  // User interaction
+  isNotified      Boolean  @default(false)
+  isInterested    Boolean  @default(true)
+  notifiedAt      DateTime?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relationships
+  author          Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@index([authorId])
+  @@index([releaseStatus])
+  @@index([expectedDate])
+  @@index([announcedDate])
+  @@index([lastScrapedAt])
+  @@unique([authorId, title], name: "authorId_title")
+  @@map("author_releases")
+}
+
+model ReadingInsight {
+  id               Int      @id @default(autoincrement())
+  insightType      String   // "reading_pattern", "genre_preference", "completion_rate", "seasonal_trend"
+  title            String
+  description      String
+  data             String   // JSON data supporting the insight
+  confidence       Float    @default(0.0)
+  isActive         Boolean  @default(true)
+  
+  // Timestamps
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  validUntil       DateTime? // When this insight expires
+  
+  @@index([insightType])
+  @@index([createdAt])
+  @@index([isActive])
+  @@map("reading_insights")
+}
+
+model DiscoveryPreference {
+  id                    Int      @id @default(autoincrement())
+  preferredGenres       String?  // JSON array of preferred genre names
+  avoidedGenres         String?  // JSON array of genres to avoid
+  preferredMoods        String?  // JSON array: ["uplifting", "mysterious", "adventurous"]
+  preferredLength       String?  // "short" (< 8hrs), "medium" (8-15hrs), "long" (>15hrs), "any"
+  preferredNarrators    String?  // JSON array of narrator names
+  discoveryFrequency    String   @default("weekly") // "daily", "weekly", "monthly"
+  enableAIRecommendations Boolean @default(true)
+  enableReleaseNotifications Boolean @default(true)
+  
+  // Advanced preferences
+  completionRateThreshold Float  @default(0.7) // Only recommend books likely to be completed
+  similarityWeight        Float  @default(0.5) // Balance between similar and diverse recommendations
+  noveltyWeight           Float  @default(0.3) // How much to weight new/unknown content
+  
+  // Timestamps  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  @@map("discovery_preferences")
+}
+

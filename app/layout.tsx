@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { FavoriteAuthorsProvider } from '@/contexts/FavoriteAuthorsContext'
 import ThemeToggle from '@/components/ThemeToggle'
 import './globals.css'
 
@@ -18,7 +19,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-gray-50 dark:bg-gray-900 transition-colors">
         <ThemeProvider>
-          <div className="min-h-screen">
+          <FavoriteAuthorsProvider>
+            <div className="min-h-screen">
             <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
@@ -35,10 +37,19 @@ export default function RootLayout({
                       </svg>
                       Series
                     </Link>
+                    <Link href="/favorite-authors" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                      Favorite Authors
+                    </Link>
                     <Link href="/stats" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                       Statistics
                     </Link>
-                    <Link href="/recommendations" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <Link href="/releases" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Releases
+                    </Link>
+                    <Link href="/discover" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                       Discover
                     </Link>
                     <Link href="/import" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
@@ -55,7 +66,8 @@ export default function RootLayout({
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               {children}
             </main>
-          </div>
+            </div>
+          </FavoriteAuthorsProvider>
         </ThemeProvider>
       </body>
     </html>

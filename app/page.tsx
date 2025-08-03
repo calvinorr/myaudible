@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Book } from '@/types'
 import AuthorQuickActions from '@/components/AuthorQuickActions'
+import AuthorSearch from '@/components/AuthorSearch'
 
 function BookCard({ book }: { book: Book }) {
   const formatDuration = (minutes: number) => {
@@ -18,13 +19,13 @@ function BookCard({ book }: { book: Book }) {
       href={`/books/${book.id}`} 
       className="group block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-600 transition-all duration-300 hover:-translate-y-1"
     >
-      <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-t-xl relative overflow-hidden">
+      <div className="aspect-[2/3] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-t-xl relative overflow-hidden">
         {book.coverUrl ? (
           <Image 
             src={book.coverUrl}
             alt={book.title}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-contain group-hover:scale-105 transition-transform duration-300 p-1"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
         ) : (
@@ -35,16 +36,16 @@ function BookCard({ book }: { book: Book }) {
           </div>
         )}
         
-        {/* Status badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1">
+        {/* Status badges - positioned at top right */}
+        <div className="absolute top-2 right-2 flex flex-row gap-1">
           {book.progress === 100 && (
-            <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-sm">
-              Complete
+            <div className="bg-green-500/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+              ✓
             </div>
           )}
           {book.isFavorite && (
-            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-sm">
-              ♥ Favorite
+            <div className="bg-red-500/90 backdrop-blur-sm text-white text-xs px-1.5 py-1 rounded-full font-medium shadow-lg">
+              ♥
             </div>
           )}
         </div>
@@ -60,9 +61,9 @@ function BookCard({ book }: { book: Book }) {
         )}
       </div>
       
-      <div className="p-5">
+      <div className="p-4">
         <div className="mb-3">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 text-lg leading-tight group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 text-base leading-tight group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">
             {book.title}
           </h3>
           <div className="flex items-center gap-2 mb-1">
@@ -159,6 +160,12 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    completedBooks: 0,
+    totalHours: 0,
+    currentlyReading: 0
+  })
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [sortBy, setSortBy] = useState('addedAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -171,6 +178,18 @@ export default function HomePage() {
     genre: ''
   })
   const ITEMS_PER_PAGE = 24
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/stats')
+      if (response.ok) {
+        const statsData = await response.json()
+        setStats(statsData)
+      }
+    } catch (err) {
+      console.error('Failed to fetch stats:', err)
+    }
+  }, [])
 
   const fetchBooks = useCallback(async (isSearch = false, loadMore = false) => {
     if (isSearch) {
@@ -237,6 +256,10 @@ export default function HomePage() {
 
     return () => clearTimeout(timer)
   }, [fetchBooks, searchTerm])
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
@@ -329,12 +352,7 @@ export default function HomePage() {
       })
   }, [currentPage, searchTerm, statusFilter, filters, sortBy, sortOrder, ITEMS_PER_PAGE])
 
-  const stats = {
-    totalBooks: books.length,
-    completedBooks: books.filter(book => book.isCompleted).length,
-    totalHours: Math.round(books.reduce((acc, book) => acc + book.duration, 0) / 60),
-    currentlyReading: books.filter(book => book.progress > 0 && !book.isCompleted).length
-  }
+  // Stats are now loaded from API in state
 
   if (loading) {
     return (
@@ -355,12 +373,23 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Your Library</h1>
           <p className="text-gray-600 dark:text-gray-300">Discover, track, and enjoy your audiobook collection</p>
         </div>
-        <div className="flex gap-3">
+        
+        <div className="flex items-start gap-4">
+          {/* Quick Author Search */}
+          <div className="w-80">
+            <AuthorSearch 
+              placeholder="Quick author search..."
+              className="w-full"
+            />
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-3">
           <Link
             href="/new-releases"
             className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
@@ -379,6 +408,7 @@ export default function HomePage() {
             </svg>
             Add Book
           </Link>
+          </div>
         </div>
       </div>
 
@@ -666,7 +696,7 @@ export default function HomePage() {
       )}
 
       {/* Books Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
         {books.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-gray-500 dark:text-gray-400 text-lg">No books in your library yet.</p>
