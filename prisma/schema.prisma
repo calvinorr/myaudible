@@ -19,7 +19,8 @@ model Author {
   updatedAt   DateTime @updatedAt
   
   // Relationships
-  books       Book[]
+  books           Book[]
+  favoriteAuthors FavoriteAuthor[]
   
   @@map("authors")
 }
@@ -111,4 +112,17 @@ model Narrator {
   books       Book[]
   
   @@map("narrators")
+}
+
+model FavoriteAuthor {
+  id        Int      @id @default(autoincrement())
+  authorId  Int
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  author    Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // Prevent duplicate favorites
+  @@unique([authorId])
+  @@map("favorite_authors")
 }

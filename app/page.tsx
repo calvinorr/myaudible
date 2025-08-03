@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Book } from '@/types'
+import AuthorQuickActions from '@/components/AuthorQuickActions'
 
 function BookCard({ book }: { book: Book }) {
   const formatDuration = (minutes: number) => {
@@ -64,7 +65,23 @@ function BookCard({ book }: { book: Book }) {
           <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 text-lg leading-tight group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">
             {book.title}
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1 font-medium">by {book.author.name}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+              by{' '}
+              <Link 
+                href={`/authors/${book.authorId}`}
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors underline decoration-1 underline-offset-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {book.author.name}
+              </Link>
+            </p>
+            <AuthorQuickActions 
+              authorId={book.authorId} 
+              authorName={book.author.name}
+              className="ml-1"
+            />
+          </div>
           {book.narrator && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Narrated by {book.narrator.name}
@@ -143,6 +160,8 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [loadingMore, setLoadingMore] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [sortBy, setSortBy] = useState('addedAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [filters, setFilters] = useState({
     minDuration: '',
     maxDuration: '',
@@ -179,6 +198,10 @@ export default function HomePage() {
       if (filters.narrator) params.append('narrator', filters.narrator)
       if (filters.genre) params.append('genre', filters.genre)
       
+      // Sorting
+      params.append('sortBy', sortBy)
+      params.append('sortOrder', sortOrder)
+      
       const offset = loadMore ? (currentPage - 1) * ITEMS_PER_PAGE : 0
       params.append('limit', ITEMS_PER_PAGE.toString())
       params.append('offset', offset.toString())
@@ -205,7 +228,7 @@ export default function HomePage() {
       setSearching(false)
       setLoadingMore(false)
     }
-  }, [searchTerm, statusFilter, filters, currentPage, ITEMS_PER_PAGE])
+  }, [searchTerm, statusFilter, filters, sortBy, sortOrder, currentPage, ITEMS_PER_PAGE])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -230,9 +253,22 @@ export default function HomePage() {
     }))
   }
 
+  const handleSortChange = (newSortBy: string) => {
+    if (newSortBy === sortBy) {
+      // Toggle sort order if same field
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New field, set default order
+      setSortBy(newSortBy)
+      setSortOrder(newSortBy === 'title' || newSortBy === 'author' ? 'asc' : 'desc')
+    }
+  }
+
   const clearAllFilters = () => {
     setSearchTerm('')
     setStatusFilter('all')
+    setSortBy('addedAt')
+    setSortOrder('desc')
     setFilters({
       minDuration: '',
       maxDuration: '',
@@ -243,7 +279,7 @@ export default function HomePage() {
     })
   }
 
-  const hasActiveFilters = searchTerm || statusFilter !== 'all' || Object.values(filters).some(v => v !== '')
+  const hasActiveFilters = searchTerm || statusFilter !== 'all' || sortBy !== 'addedAt' || sortOrder !== 'desc' || Object.values(filters).some(v => v !== '')
 
   const loadMoreBooks = useCallback(() => {
     const nextPage = currentPage + 1
@@ -258,6 +294,18 @@ export default function HomePage() {
       else if (statusFilter === 'completed') params.append('status', 'completed')
       else if (statusFilter === 'not_started') params.append('status', 'not_started')
     }
+    
+    // Advanced filters
+    if (filters.minDuration) params.append('minDuration', filters.minDuration)
+    if (filters.maxDuration) params.append('maxDuration', filters.maxDuration)
+    if (filters.releaseYear) params.append('releaseYear', filters.releaseYear)
+    if (filters.series) params.append('series', filters.series)
+    if (filters.narrator) params.append('narrator', filters.narrator)
+    if (filters.genre) params.append('genre', filters.genre)
+    
+    // Sorting
+    params.append('sortBy', sortBy)
+    params.append('sortOrder', sortOrder)
     
     const offset = (nextPage - 1) * ITEMS_PER_PAGE
     params.append('limit', ITEMS_PER_PAGE.toString())
@@ -279,7 +327,7 @@ export default function HomePage() {
       .finally(() => {
         setLoadingMore(false)
       })
-  }, [currentPage, searchTerm, statusFilter, ITEMS_PER_PAGE])
+  }, [currentPage, searchTerm, statusFilter, filters, sortBy, sortOrder, ITEMS_PER_PAGE])
 
   const stats = {
     totalBooks: books.length,
@@ -431,21 +479,58 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          <div className="relative">
-            <select 
-              value={statusFilter} 
-              onChange={handleStatusFilterChange}
-              className="appearance-none px-4 py-3 pr-10 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 text-sm min-w-[160px]"
-            >
-              <option value="all">All Books</option>
-              <option value="reading">Currently Reading</option>
-              <option value="completed">Completed</option>
-              <option value="not_started">Not Started</option>
-            </select>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+          
+          <div className="flex gap-3">
+            {/* Status Filter */}
+            <div className="relative">
+              <select 
+                value={statusFilter} 
+                onChange={handleStatusFilterChange}
+                className="appearance-none px-4 py-3 pr-10 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 text-sm min-w-[160px]"
+              >
+                <option value="all">All Books</option>
+                <option value="reading">Currently Reading</option>
+                <option value="completed">Completed</option>
+                <option value="not_started">Not Started</option>
+              </select>
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Sort Controls */}
+            <div className="flex bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+              {[
+                { key: 'addedAt', label: 'Recently Added', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { key: 'title', label: 'Title A-Z', icon: 'M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12' },
+                { key: 'author', label: 'Author A-Z', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+                { key: 'releaseDate', label: 'Release Date', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { key: 'duration', label: 'Duration', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { key: 'personalRating', label: 'Rating', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' }
+              ].map((sort) => (
+                <button
+                  key={sort.key}
+                  onClick={() => handleSortChange(sort.key)}
+                  className={`px-3 py-3 text-xs font-medium transition-all duration-200 flex items-center gap-1.5 min-w-0 ${
+                    sortBy === sort.key
+                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-r border-primary-200 dark:border-primary-700'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 border-r border-gray-200 dark:border-gray-600'
+                  } last:border-r-0`}
+                  title={`Sort by ${sort.label} ${sortBy === sort.key ? (sortOrder === 'asc' ? '↑' : '↓') : ''}`}
+                >
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sort.icon} />
+                  </svg>
+                  <span className="hidden sm:inline truncate">{sort.label}</span>
+                  {sortBy === sort.key && (
+                    <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortOrder === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                    </svg>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>

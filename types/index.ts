@@ -5,6 +5,11 @@ export interface Author {
   imageUrl?: string
   createdAt: string
   updatedAt: string
+  favoriteAuthors?: FavoriteAuthor[]
+  _count?: {
+    books: number
+    favoriteAuthors: number
+  }
 }
 
 export interface Narrator {
@@ -22,6 +27,13 @@ export interface Genre {
   description?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface FavoriteAuthor {
+  id: number
+  authorId: number
+  createdAt: string
+  author: Author
 }
 
 export interface Book {

@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const series = searchParams.get('series')
     const narrator = searchParams.get('narrator')
     const genre = searchParams.get('genre')
+    const sortBy = searchParams.get('sortBy') || 'addedAt'
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc'
 
     // Build where clause
     const where: any = {}
@@ -71,6 +73,31 @@ export async function GET(request: NextRequest) {
       where.genre = { name: { contains: genre, mode: 'insensitive' } }
     }
 
+    // Build orderBy clause
+    let orderBy: any = {}
+    
+    switch (sortBy) {
+      case 'title':
+        orderBy = { title: sortOrder }
+        break
+      case 'author':
+        orderBy = { author: { name: sortOrder } }
+        break
+      case 'releaseDate':
+        orderBy = { releaseDate: sortOrder }
+        break
+      case 'duration':
+        orderBy = { duration: sortOrder }
+        break
+      case 'personalRating':
+        orderBy = { personalRating: sortOrder }
+        break
+      case 'addedAt':
+      default:
+        orderBy = { addedAt: sortOrder }
+        break
+    }
+
     const books = await prisma.book.findMany({
       where,
       take: limit,
@@ -80,9 +107,7 @@ export async function GET(request: NextRequest) {
         genre: true,
         narrator: true,
       },
-      orderBy: {
-        addedAt: 'desc',
-      },
+      orderBy,
     })
 
     const totalCount = await prisma.book.count({ where })
